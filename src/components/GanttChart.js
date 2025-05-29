@@ -3,7 +3,6 @@ import { Plus, Edit2, X, Download, Trash2, ChevronDown, ChevronUp } from 'lucide
 
 const GanttChart = () => {
   const [tasks, setTasks] = useState(() => {
-    // Загрузка задач из localStorage при инициализации
     const savedTasks = localStorage.getItem('ganttTasks');
     if (savedTasks) {
       return JSON.parse(savedTasks, (key, value) => {
@@ -19,37 +18,35 @@ const GanttChart = () => {
   const [editingTask, setEditingTask] = useState({ name: '', assignee: '' });
   const [dragState, setDragState] = useState(null);
   const [nonWorkingDays, setNonWorkingDays] = useState(new Set());
-  const [period, setPeriod] = useState('sprint'); // sprint, month, quarter
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [period, setPeriod] = useState('sprint');
+
+  // Устанавливаем начальную дату на первый день текущего месяца
+  const currentDate = new Date();
+  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+  const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
+
   const [documentTitle, setDocumentTitle] = useState('Диаграмма Ганта');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(true);
 
-  // Сохранение задач в localStorage при изменении
-  useEffect(() => {
-    localStorage.setItem('ganttTasks', JSON.stringify(tasks));
-  }, [tasks]);
+  const ganttContainerRef = useRef(null);
+  const [dayWidth, setDayWidth] = useState(40);
+  const taskHeight = 80;
 
-  // Refs для синхронизации прокрутки
-  const timelineHeaderRef = useRef(null);
-  const timelineContentRef = useRef(null);
-  const taskListRef = useRef(null);
-
-  // Получение диапазона дат для отображения
   const getDateRange = () => {
     const selectedStartDate = new Date(startDate);
     let endDate;
 
     if (period === 'sprint') {
       endDate = new Date(selectedStartDate);
-      endDate.setDate(selectedStartDate.getDate() + 14); // 2 недели вперед
+      endDate.setDate(selectedStartDate.getDate() + 14);
     } else if (period === 'month') {
-      endDate = new Date(selectedStartDate.getFullYear(), selectedStartDate.getMonth() + 1, 0); // конец текущего месяца
+      endDate = new Date(selectedStartDate.getFullYear(), selectedStartDate.getMonth() + 1, 1);
     } else if (period === 'quarter') {
       const currentMonth = selectedStartDate.getMonth();
       const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
-      endDate = new Date(selectedStartDate.getFullYear(), quarterStartMonth + 3, 0); // конец текущего квартала
+      endDate = new Date(selectedStartDate.getFullYear(), quarterStartMonth + 3, 0);
     }
 
     const dates = [];
@@ -64,17 +61,38 @@ const GanttChart = () => {
   };
 
   const dates = getDateRange();
-  const dayWidth = 40;
-  const taskHeight = 80;
 
-  // Проверка, является ли день выходным (суббота или воскресенье) или нерабочим
+  useEffect(() => {
+    localStorage.setItem('ganttTasks', JSON.stringify(tasks));
+  }, [tasks]);
+
+  useEffect(() => {
+    const updateDayWidth = () => {
+      if (ganttContainerRef.current) {
+        const containerWidth = ganttContainerRef.current.offsetWidth;
+        const newDayWidth = containerWidth / dates.length;
+        setDayWidth(newDayWidth);
+      }
+    };
+
+    updateDayWidth();
+    window.addEventListener('resize', updateDayWidth);
+
+    return () => {
+      window.removeEventListener('resize', updateDayWidth);
+    };
+  }, [dates.length]);
+
+  const timelineHeaderRef = useRef(null);
+  const timelineContentRef = useRef(null);
+  const taskListRef = useRef(null);
+
   const isNonWorkingDay = (date) => {
-    const dayOfWeek = date.getDay(); // 0 = воскресенье, 6 = суббота
+    const dayOfWeek = date.getDay();
     const dateString = getDateString(date);
     return dayOfWeek === 0 || dayOfWeek === 6 || nonWorkingDays.has(dateString);
   };
 
-  // Получение строки даты в формате YYYY-MM-DD без учета часового пояса
   const getDateString = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -82,7 +100,6 @@ const GanttChart = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Переключение рабочего/нерабочего дня
   const toggleWorkingDay = (date) => {
     const dateString = getDateString(date);
     const dayOfWeek = date.getDay();
@@ -91,14 +108,12 @@ const GanttChart = () => {
     setNonWorkingDays((prev) => {
       const newSet = new Set(prev);
       if (isWeekend) {
-        // Если это выходной день, убираем его из нерабочих (делаем рабочим)
         if (newSet.has(dateString)) {
           newSet.delete(dateString);
         } else {
           newSet.add(dateString);
         }
       } else {
-        // Если это будний день, переключаем его статус
         if (newSet.has(dateString)) {
           newSet.delete(dateString);
         } else {
@@ -109,7 +124,6 @@ const GanttChart = () => {
     });
   };
 
-  // Синхронизация прокрутки
   const handleTimelineScroll = (e) => {
     if (timelineHeaderRef.current && e.target === timelineContentRef.current) {
       timelineHeaderRef.current.scrollLeft = e.target.scrollLeft;
@@ -125,7 +139,6 @@ const GanttChart = () => {
     }
   };
 
-  // Форматирование даты
   const formatDate = (date) => {
     return date.toLocaleDateString('ru-RU', {
       day: '2-digit',
@@ -133,7 +146,6 @@ const GanttChart = () => {
     });
   };
 
-  // Добавление новой задачи
   const addTask = () => {
     if (newTask.name.trim() && newTask.assignee.trim()) {
       const newTaskObj = {
@@ -148,7 +160,6 @@ const GanttChart = () => {
     }
   };
 
-  // Получение позиции задачи на диаграмме
   const getTaskPosition = (task) => {
     const firstDate = dates[0];
     const daysDiff = Math.floor((task.startDate - firstDate) / (1000 * 60 * 60 * 24));
@@ -158,7 +169,6 @@ const GanttChart = () => {
     };
   };
 
-  // Получение рабочих дней для задачи
   const getWorkingDaysForTask = (task) => {
     const taskDays = [];
     const currentDate = new Date(task.startDate);
@@ -181,7 +191,6 @@ const GanttChart = () => {
     return taskDays;
   };
 
-  // Обработка начала перетаскивания
   const handleMouseDown = (e, task, action) => {
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -198,7 +207,6 @@ const GanttChart = () => {
     });
   };
 
-  // Обработка перемещения мыши
   const handleMouseMove = (e) => {
     if (!dragState) return;
 
@@ -210,16 +218,13 @@ const GanttChart = () => {
         if (task.id !== dragState.taskId) return task;
 
         if (dragState.action === 'move') {
-          // Перемещение задачи
           const newStartDate = new Date(dragState.initialStartDate);
           newStartDate.setDate(newStartDate.getDate() + daysDelta);
           return { ...task, startDate: newStartDate };
         } else if (dragState.action === 'resize-right') {
-          // Изменение длительности справа
           const newDuration = Math.max(1, dragState.initialDuration + daysDelta);
           return { ...task, duration: newDuration };
         } else if (dragState.action === 'resize-left') {
-          // Изменение длительности слева
           const newDuration = Math.max(1, dragState.initialDuration - daysDelta);
           const newStartDate = new Date(dragState.initialStartDate);
           newStartDate.setDate(newStartDate.getDate() + (dragState.initialDuration - newDuration));
@@ -231,19 +236,16 @@ const GanttChart = () => {
     );
   };
 
-  // Подсчет только рабочих дней в задаче
   const getWorkingDaysCount = (task) => {
     const taskDays = getWorkingDaysForTask(task);
     return taskDays.filter((day) => day.isWorkingDay).length;
   };
 
-  // Обработка отпускания мыши
   const handleMouseUp = () => {
     setDragState(null);
   };
 
-  // Добавление обработчиков событий
-  React.useEffect(() => {
+  useEffect(() => {
     if (dragState) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -254,13 +256,11 @@ const GanttChart = () => {
     }
   }, [dragState]);
 
-  // Обработка клика по задаче в списке для редактирования
   const handleTaskListClick = (task) => {
     setEditingTaskId(task.id);
     setEditingTask({ name: task.name, assignee: task.assignee });
   };
 
-  // Сохранение изменений задачи
   const saveTaskEdit = () => {
     if (editingTask.name.trim() && editingTask.assignee.trim()) {
       setTasks((prevTasks) =>
@@ -275,25 +275,21 @@ const GanttChart = () => {
     setEditingTask({ name: '', assignee: '' });
   };
 
-  // Отмена редактирования задачи
   const cancelTaskEdit = () => {
     setEditingTaskId(null);
     setEditingTask({ name: '', assignee: '' });
   };
 
-  // Удаление задачи
   const deleteTask = (taskId) => {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
     setEditingTaskId(null);
     setEditingTask({ name: '', assignee: '' });
   };
 
-  // Удаление всех задач
   const clearAllTasks = () => {
     setTasks([]);
   };
 
-  // Генерация Markdown
   const generateMarkdown = () => {
     let markdown = `# ${documentTitle}\n\n`;
 
@@ -313,7 +309,6 @@ const GanttChart = () => {
     return markdown;
   };
 
-  // Скачивание Markdown
   const downloadMarkdown = () => {
     const markdown = generateMarkdown();
     const blob = new Blob([markdown], { type: 'text/markdown' });
@@ -321,7 +316,6 @@ const GanttChart = () => {
     const link = document.createElement('a');
     link.href = url;
 
-    // Формирование имени файла
     const now = new Date();
     const dateString = `${String(now.getDate()).padStart(2, '0')}.${String(
       now.getMonth() + 1,
@@ -335,26 +329,22 @@ const GanttChart = () => {
     document.body.removeChild(link);
   };
 
-  // Открытие всплывающего окна для изменения названия документа
   const openEditTitleModal = () => {
     setTempTitle(documentTitle);
     setIsEditingTitle(true);
   };
 
-  // Сохранение нового названия документа
   const saveDocumentTitle = () => {
     setDocumentTitle(tempTitle);
     setIsEditingTitle(false);
   };
 
-  // Отмена изменения названия документа
   const cancelEditTitle = () => {
     setIsEditingTitle(false);
   };
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col relative">
-      {/* Header */}
       <div className="bg-white border-b p-4">
         <div className="flex items-center gap-2 mb-4">
           <h1 className="text-2xl font-bold text-gray-800">{documentTitle}</h1>
@@ -363,7 +353,6 @@ const GanttChart = () => {
           </button>
         </div>
 
-        {/* Add Task Form */}
         <div className="flex gap-2 items-center">
           <input
             type="text"
@@ -413,9 +402,7 @@ const GanttChart = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Tasks List */}
         <div className="w-80 bg-white border-r flex flex-col">
           <div className="px-4 py-3 border-b bg-gray-50">
             <h2 className="font-semibold text-gray-700 pb-2">Список задач</h2>
@@ -456,9 +443,7 @@ const GanttChart = () => {
           </div>
         </div>
 
-        {/* Gantt Chart */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Timeline Header */}
+        <div className="flex-1 flex flex-col overflow-hidden" ref={ganttContainerRef}>
           <div className="bg-white border-b overflow-hidden">
             <div
               ref={timelineHeaderRef}
@@ -481,10 +466,12 @@ const GanttChart = () => {
                     onClick={() => toggleWorkingDay(date)}
                     title={
                       isWeekend
-                        ? `${isCustomNonWorking ? 'Рабочий выходной' : 'Выходной день'}`
+                        ? `${
+                            isCustomNonWorking ? 'Рабочий выходной' : 'Выходной день'
+                          } - нажмите для переключения`
                         : `${
                             isCustomNonWorking ? 'Нерабочий день' : 'Рабочий день'
-                          } - нажмите для изменения`
+                          } - нажмите для переключения`
                     }>
                     <div>{formatDate(date)}</div>
                     <div className={isNonWorking ? 'text-gray-400' : 'text-gray-400'}>
@@ -502,7 +489,6 @@ const GanttChart = () => {
             </div>
           </div>
 
-          {/* Timeline Content */}
           <div
             ref={timelineContentRef}
             className="flex-1 overflow-auto"
@@ -514,7 +500,6 @@ const GanttChart = () => {
                 height: tasks.length * taskHeight,
                 minHeight: '100%',
               }}>
-              {/* Grid Lines */}
               {dates.map((date, index) => {
                 const isNonWorking = isNonWorkingDay(date);
                 return (
@@ -533,15 +518,12 @@ const GanttChart = () => {
                 );
               })}
 
-              {/* Task Bars */}
               {tasks.map((task, index) => {
-                const position = getTaskPosition(task);
                 const isEditing = editingTaskId === task.id;
                 const taskDays = getWorkingDaysForTask(task);
 
                 return (
                   <div key={task.id} className="relative">
-                    {/* Task Row Background */}
                     <div
                       className="absolute border-b border-gray-100 hover:bg-gray-50"
                       style={{
@@ -552,7 +534,6 @@ const GanttChart = () => {
                       }}
                     />
 
-                    {/* Task Bar Segments */}
                     {taskDays.map((day, dayIndex) => {
                       const segmentLeft = day.index * dayWidth;
                       const isFirstSegment = dayIndex === 0;
@@ -580,7 +561,6 @@ const GanttChart = () => {
                             zIndex: day.isWorkingDay ? 10 : 5,
                           }}
                           onMouseDown={(e) => handleMouseDown(e, task, 'move')}>
-                          {/* Resize Handles - на первом и последнем сегменте задачи */}
                           {isFirstSegment && (
                             <div
                               className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize ${
@@ -614,7 +594,6 @@ const GanttChart = () => {
         </div>
       </div>
 
-      {/* Modal для редактирования задач */}
       {editingTaskId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-96 max-w-md mx-4">
@@ -673,7 +652,6 @@ const GanttChart = () => {
         </div>
       )}
 
-      {/* Modal для редактирования названия документа */}
       {isEditingTitle && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-96 max-w-md mx-4">
@@ -713,19 +691,18 @@ const GanttChart = () => {
         </div>
       )}
 
-      {/* Instructions */}
       <div className="bg-gray-100 p-3 text-sm text-gray-600">
         <div className="flex justify-between items-center">
-          <strong className="pb-1">Инструкции</strong>
+          <strong>Инструкции</strong>
           <button
             onClick={() => setIsInstructionsOpen(!isInstructionsOpen)}
             className="text-gray-600 hover:text-gray-800">
-            {isInstructionsOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+            {isInstructionsOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
         </div>
         {isInstructionsOpen && (
           <>
-            <p className="pb-1">
+            <p>
               Перетаскивайте задачи для изменения даты начала. Наведите на края задач и
               перетаскивайте для изменения длительности. Кликните по задаче в списке слева для
               редактирования или удаления.
