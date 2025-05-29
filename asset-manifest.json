@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/gaant/static/css/main.61e1f82b.css",
-    "main.js": "/gaant/static/js/main.1fac238f.js",
+    "main.js": "/gaant/static/js/main.601bf64e.js",
     "index.html": "/gaant/index.html",
     "main.61e1f82b.css.map": "/gaant/static/css/main.61e1f82b.css.map",
-    "main.1fac238f.js.map": "/gaant/static/js/main.1fac238f.js.map"
+    "main.601bf64e.js.map": "/gaant/static/js/main.601bf64e.js.map"
   },
   "entrypoints": [
     "static/css/main.61e1f82b.css",
-    "static/js/main.1fac238f.js"
+    "static/js/main.601bf64e.js"
   ]
 }
