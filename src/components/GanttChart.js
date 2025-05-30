@@ -14,6 +14,7 @@ const GanttChart = () => {
   });
 
   const [newTask, setNewTask] = useState({ name: '', assignee: '' });
+  const [errors, setErrors] = useState({ name: '', assignee: '' });
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTask, setEditingTask] = useState({
     name: '',
@@ -150,8 +151,26 @@ const GanttChart = () => {
     });
   };
 
+  const validateTask = () => {
+    let valid = true;
+    const newErrors = { name: '', assignee: '' };
+
+    if (!newTask.name.trim()) {
+      newErrors.name = 'Название задачи обязательно';
+      valid = false;
+    }
+
+    if (!newTask.assignee.trim()) {
+      newErrors.assignee = 'Исполнитель обязателен';
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
   const addTask = () => {
-    if (newTask.name.trim() && newTask.assignee.trim()) {
+    if (validateTask()) {
       const newTaskObj = {
         id: Date.now(),
         name: newTask.name,
@@ -161,6 +180,7 @@ const GanttChart = () => {
       };
       setTasks([...tasks, newTaskObj]);
       setNewTask({ name: '', assignee: '' });
+      setErrors({ name: '', assignee: '' });
     }
   };
 
@@ -368,21 +388,45 @@ const GanttChart = () => {
           </button>
         </div>
 
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
-            placeholder="Название задачи"
-            value={newTask.name}
-            onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-            className="border rounded px-3 py-2 flex-1"
-          />
-          <input
-            type="text"
-            placeholder="Исполнитель"
-            value={newTask.assignee}
-            onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-            className="border rounded px-3 py-2 w-48"
-          />
+        <div className="flex gap-2 items-center pb-2.5">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Название задачи"
+              value={newTask.name}
+              onChange={(e) => {
+                setNewTask({ ...newTask, name: e.target.value });
+                setErrors({ ...errors, name: '' });
+              }}
+              className="border rounded px-3 py-2 w-full"
+            />
+            {errors.name && (
+              <p
+                className="absolute text-red-500 text-xs mt-1"
+                style={{ bottom: '-18px', marginLeft: '0.2rem' }}>
+                {errors.name}
+              </p>
+            )}
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Исполнитель"
+              value={newTask.assignee}
+              onChange={(e) => {
+                setNewTask({ ...newTask, assignee: e.target.value });
+                setErrors({ ...errors, assignee: '' });
+              }}
+              className="border rounded px-3 py-2 w-48"
+            />
+            {errors.assignee && (
+              <p
+                className="absolute text-red-500 text-xs mt-1 mr-1"
+                style={{ bottom: '-18px', marginLeft: '0.2rem' }}>
+                {errors.assignee}
+              </p>
+            )}
+          </div>
           <button
             onClick={addTask}
             className="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-600">
@@ -429,13 +473,10 @@ const GanttChart = () => {
             {tasks.map((task, index) => (
               <div
                 key={task.id}
-                className={`border-b hover:bg-gray-50 flex items-center px-4 cursor-pointer ${
+                className={`border-b hover:bg-gray-50 flex items-center px-4 cursor-pointer relative group ${
                   editingTaskId === task.id ? 'bg-blue-50 border-blue-200' : ''
                 }`}
-                style={{
-                  height: taskHeight,
-                  minHeight: taskHeight,
-                }}
+                style={{ height: taskHeight, minHeight: taskHeight }}
                 onClick={() => handleTaskListClick(task)}>
                 <div className="flex-1">
                   <div className="font-medium text-gray-800 mb-1">{task.name}</div>
@@ -452,7 +493,9 @@ const GanttChart = () => {
                     </span>
                   </div>
                 </div>
-                {editingTaskId === task.id && <Edit2 size={16} className="text-blue-500" />}
+                <div className="opacity-0 group-hover:opacity-100 absolute right-4 flex items-center">
+                  <Edit2 size={16} className="text-blue-500" />
+                </div>
               </div>
             ))}
           </div>
