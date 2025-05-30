@@ -26,9 +26,8 @@ const GanttChart = () => {
   const [nonWorkingDays, setNonWorkingDays] = useState(new Set());
   const [period, setPeriod] = useState('quarter');
 
-  const currentDate = new Date();
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
+  // Устанавливаем начальную дату на текущую дату
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [documentTitle, setDocumentTitle] = useState('Диаграмма Ганта');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
