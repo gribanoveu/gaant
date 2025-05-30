@@ -24,7 +24,7 @@ const GanttChart = () => {
   });
   const [dragState, setDragState] = useState(null);
   const [nonWorkingDays, setNonWorkingDays] = useState(new Set());
-  const [period, setPeriod] = useState('sprint');
+  const [period, setPeriod] = useState('quarter');
 
   const currentDate = new Date();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -49,9 +49,8 @@ const GanttChart = () => {
     } else if (period === 'month') {
       endDate = new Date(selectedStartDate.getFullYear(), selectedStartDate.getMonth() + 1, 1);
     } else if (period === 'quarter') {
-      const currentMonth = selectedStartDate.getMonth();
-      const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
-      endDate = new Date(selectedStartDate.getFullYear(), quarterStartMonth + 3, 0);
+      endDate = new Date(selectedStartDate);
+      endDate.setDate(selectedStartDate.getDate() + 30);
     }
 
     const dates = [];
@@ -450,7 +449,8 @@ const GanttChart = () => {
             onChange={(e) => setPeriod(e.target.value)}
             className="border rounded px-3 py-2">
             <option value="sprint">Спринт</option>
-            <option value="month">Месяц</option>
+            <option value="month">До конца месяца</option>
+            <option value="quarter">30 дней</option>
           </select>
           <input
             type="date"
