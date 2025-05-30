@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/gaant/static/css/main.451d8eb6.css",
-    "main.js": "/gaant/static/js/main.347720df.js",
+    "main.css": "/gaant/static/css/main.97037d46.css",
+    "main.js": "/gaant/static/js/main.cee15123.js",
     "index.html": "/gaant/index.html",
-    "main.451d8eb6.css.map": "/gaant/static/css/main.451d8eb6.css.map",
-    "main.347720df.js.map": "/gaant/static/js/main.347720df.js.map"
+    "main.97037d46.css.map": "/gaant/static/css/main.97037d46.css.map",
+    "main.cee15123.js.map": "/gaant/static/js/main.cee15123.js.map"
   },
   "entrypoints": [
-    "static/css/main.451d8eb6.css",
-    "static/js/main.347720df.js"
+    "static/css/main.97037d46.css",
+    "static/js/main.cee15123.js"
   ]
 }
